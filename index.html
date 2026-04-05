@@ -10,7 +10,11 @@
     .main{margin-left:220px;padding:20px;}
     .cards{display:flex;gap:20px;margin-bottom:20px;}
     .card{flex:1;padding:20px;border-radius:10px;color:white;text-align:center;}
-    .card.red{background:#ef4444;} .card.yellow{background:#facc15;color:black;}
+    .card.red{background:#ef4444;} 
+    .card.yellow{background:#facc15;color:black;}  
+    .card.green{background:#1ba829;color:black;}
+    .form-inline {display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+    .form-inline input, .form-inline select {padding:5px;border-radius:5px;border:1px solid #ccc;}
     table{width:100%;border-collapse:collapse;margin-top:20px;}
     th,td{padding:10px;border:1px solid #ccc;text-align:left;}
     .btn{padding:5px 10px;border:none;border-radius:5px;cursor:pointer;}
@@ -22,58 +26,159 @@
 <body>
 <div class="sidebar">
   <h3>Invoice</h3>
-  <a href="dashboard.html" class="active">Dashboard</a>
+  <a href="index.html" class="active">Dashboard</a>
   <a href="manage-change.html">Manage Chains</a>
   <a href="add-group.html">Manage Group</a>
+  <a href="manage-brands.html">Manage Brand</a>
 </div>
+
 <div class="main">
   <h2>Dashboard</h2>
+
+  <!-- Total Cards -->
   <div class="cards">
     <div class="card red">Total Groups<br><h2 id="totalGroups">0</h2></div>
     <div class="card yellow">Total Chains<br><h2 id="totalChains">0</h2></div>
+    <div class="card green">Total Brands<br><h2 id="totalBrands">0</h2></div>
   </div>
+
+  <!-- Filters -->
+  <div class="form-inline">
+    <input type="text" id="companyFilter" placeholder="Filter by Company" oninput="applyFilters()">
+    <select id="groupFilter" onchange="applyFilters()">
+      <option value="">All Groups</option>
+    </select>
+  </div>
+
+  <!-- Add Brand Form -->
+  <div class="form-inline">
+    <select id="chainSelect">
+      <option value="">Select Company</option>
+    </select>
+    <input type="text" id="brandName" placeholder="Brand Name">
+    <button class="btn add" onclick="addBrand()">Add Brand</button>
+  </div>
+
+  <!-- Table -->
   <table>
     <thead>
-      <tr><th>Sr</th><th>Group</th><th>Company</th><th>GST</th><th>Edit</th><th>Delete</th></tr>
+      <tr>
+        <th>Sr</th>
+        <th>Group</th>
+        <th>Company</th>
+        <th>GST</th>
+        <th>Brands</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>
     </thead>
     <tbody id="table"></tbody>
   </table>
 </div>
 
 <script>
-const API="http://localhost:5000";
+const API = "http://localhost:5000";
+let chains = [];
+let groups = [];
+let brands = [];
 
+// Load all data
 async function loadData(){
-  const groups = await (await fetch(API+"/groups")).json();
-  const chains = await (await fetch(API+"/chains")).json();
-  document.getElementById("totalGroups").innerText = groups.length;
-  document.getElementById("totalChains").innerText = chains.length;
+  try{
+    [groups, chains, brands] = await Promise.all([
+      fetch(API+"/groups").then(res=>res.json()),
+      fetch(API+"/chains").then(res=>res.json()),
+      fetch(API+"/brands").then(res=>res.json())
+    ]);
 
+    // Update total cards
+    document.getElementById("totalGroups").innerText = groups.length;
+    document.getElementById("totalChains").innerText = chains.length;
+    document.getElementById("totalBrands").innerText = brands.length;
+
+    // Fill group filter dropdown
+    const groupFilter = document.getElementById("groupFilter");
+    groupFilter.innerHTML = `<option value="">All Groups</option>` +
+      groups.map(g=>`<option value="${g.group_id}">${g.group_name}</option>`).join("");
+
+    // Fill chain dropdown for Add Brand
+    const chainSelect = document.getElementById("chainSelect");
+    chainSelect.innerHTML = `<option value="">Select Company</option>` +
+      chains.map(c=>`<option value="${c.chain_id}">${c.company_name}</option>`).join("");
+
+    // Render table
+    renderTable(chains);
+  }catch(err){
+    console.error("Error loading data:", err);
+  }
+}
+
+// Render table rows
+function renderTable(data){
   const table = document.getElementById("table");
   table.innerHTML = "";
-  if(chains.length===0){ table.innerHTML="<tr><td colspan='6'>No chains found</td></tr>"; return; }
+  if(data.length===0){ 
+    table.innerHTML="<tr><td colspan='7'>No records found</td></tr>"; 
+    return; 
+  }
 
-  chains.forEach((c,i)=>{
+  data.forEach((c,i)=>{
+    const groupName = groups.find(g=>g.group_id==c.group_id)?.group_name || "";
+    const brandCount = brands.filter(b=>b.chain_id===c.chain_id).length;
     table.innerHTML += `<tr>
       <td>${i+1}</td>
-      <td>${c.group_name}</td>
+      <td>${groupName}</td>
       <td>${c.company_name}</td>
       <td>${c.gstn_no}</td>
+      <td>${brandCount}</td>
       <td><button class="btn edit" onclick="editChain(${c.chain_id})">Edit</button></td>
       <td><button class="btn delete" onclick="deleteChain(${c.chain_id})">Delete</button></td>
     </tr>`;
   });
 }
 
-async function editChain(id){
-  const chain = await (await fetch(API+"/chains")).json().then(arr=>arr.find(c=>c.chain_id==id));
-  const name = prompt("Company Name", chain.company_name);
-  const gst = prompt("GST Number", chain.gstn_no);
-  if(!name || !gst) return;
-  await fetch(API+"/chains/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({company_name:name,gstn_no:gst,group_id:chain.group_id})});
+// Apply filters
+function applyFilters(){
+  const company = document.getElementById("companyFilter").value.toLowerCase();
+  const groupId = document.getElementById("groupFilter").value;
+
+  let filtered = chains;
+  if(company) filtered = filtered.filter(c=>c.company_name.toLowerCase().includes(company));
+  if(groupId) filtered = filtered.filter(c=>c.group_id==groupId);
+
+  renderTable(filtered);
+}
+
+// Add Brand
+async function addBrand(){
+  const chain_id = document.getElementById("chainSelect").value;
+  const brand_name = document.getElementById("brandName").value.trim();
+  if(!chain_id || !brand_name) return alert("Select company and enter brand name");
+
+  await fetch(API+"/brands",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({brand_name, chain_id})
+  });
+  document.getElementById("brandName").value = "";
   loadData();
 }
 
+// Edit chain
+async function editChain(id){
+  const chain = chains.find(c=>c.chain_id==id);
+  const name = prompt("Company Name", chain.company_name);
+  const gst = prompt("GST Number", chain.gstn_no);
+  if(!name || !gst) return;
+  await fetch(API+"/chains/"+id,{
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({company_name:name,gstn_no:gst,group_id:chain.group_id})
+  });
+  loadData();
+}
+
+// Delete chain
 async function deleteChain(id){
   if(!confirm("Delete this chain?")) return;
   await fetch(API+"/chains/"+id+"/delete",{method:"PATCH"});

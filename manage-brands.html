@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manage Brands</title>
+  <style>
+    body{font-family:Arial; display:flex; margin:0; background:#f5f5f5;}
+    .sidebar{width:200px;background:#fff;padding:20px;border-right:1px solid #ccc;height:100vh;}
+    .sidebar a{display:block;margin:10px 0;text-decoration:none;color:#007bff;}
+    .sidebar a.active{font-weight:bold;}
+    .main{flex:1;padding:20px;}
+    table{width:100%;border-collapse:collapse;margin-top:20px;}
+    th,td{padding:10px;text-align:center;border:1px solid #ccc;}
+    .btn{padding:5px 10px;border:none;border-radius:5px;cursor:pointer;}
+    .btn.add{background:green;color:white;}
+    .btn.edit{background:orange;color:white;}
+    .btn.delete{background:red;color:white;}
+    .filter a{cursor:pointer;display:block;color:#007bff;margin:3px 0;}
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h3>Invoice</h3>
+  <a href="index.html">Dashboard</a>
+  <a href="manage-groups.html">Manage Groups</a>
+  <a href="manage-change.html">Manage Chain</a>
+  <a href="manage-brands.html" class="active">Manage Brands</a>
+</div>
+
+<div class="main">
+  <h2>Manage Brands</h2>
+
+  <!-- Add Brand Form -->
+  <input id="brandName" placeholder="Enter Brand Name">
+  <select id="chainSelect"></select>
+  <button class="btn add" onclick="addBrand()">Add Brand</button>
+
+  <!-- Filter -->
+  <h4>Filter by Company</h4>
+  <div id="companyFilter" class="filter"></div>
+  <h4>Filter by Group</h4>
+  <div id="groupFilter" class="filter"></div>
+
+  <!-- Brands Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>Sr</th><th>Group</th><th>Company</th><th>Brand</th><th>Edit</th><th>Delete</th>
+      </tr>
+    </thead>
+    <tbody id="brandTable"></tbody>
+  </table>
+</div>
+
+<script>
+const API="http://localhost:5000";
+
+let chains=[], brands=[];
+
+// Load initial data
+async function loadData(){
+  const chainRes = await fetch(API+"/chains");
+  chains = await chainRes.json();
+
+  const brandRes = await fetch(API+"/brands");
+  brands = await brandRes.json();
+
+  populateChainDropdown();
+  populateFilters();
+  populateBrandTable(brands);
+}
+
+// Populate dropdown for Add Brand
+function populateChainDropdown(){
+  const select = document.getElementById("chainSelect");
+  select.innerHTML = "";
+  chains.forEach(c=> select.innerHTML += `<option value="${c.chain_id}">${c.company_name}</option>`);
+}
+
+// Populate filter links
+function populateFilters(){
+  const companyFilter = document.getElementById("companyFilter");
+  const groupFilter = document.getElementById("groupFilter");
+  companyFilter.innerHTML=""; groupFilter.innerHTML="";
+
+  const uniqueCompanies = [...new Set(chains.map(c=>c.company_name))];
+  const uniqueGroups = [...new Set(chains.map(c=>c.group_name))];
+
+  uniqueCompanies.forEach(c=> companyFilter.innerHTML += `<a onclick="filterByCompany('${c}')">${c}</a>`);
+  uniqueGroups.forEach(g=> groupFilter.innerHTML += `<a onclick="filterByGroup('${g}')">${g}</a>`);
+}
+
+// Populate table
+function populateBrandTable(data){
+  const table = document.getElementById("brandTable");
+  table.innerHTML = "";
+  if(data.length===0){ table.innerHTML="<tr><td colspan='6'>No brands found</td></tr>"; return; }
+  data.forEach((b,i)=>{
+    table.innerHTML += `<tr>
+      <td>${i+1}</td>
+      <td>${b.group_name}</td>
+      <td>${b.company_name}</td>
+      <td>${b.brand_name}</td>
+      <td><button class="btn edit" onclick="editBrand(${b.brand_id}, '${b.brand_name}', ${b.chain_id})">Edit</button></td>
+      <td><button class="btn delete" onclick="deleteBrand(${b.brand_id})">Delete</button></td>
+    </tr>`;
+  });
+}
+
+// Add Brand
+async function addBrand(){
+  const brand_name = document.getElementById("brandName").value.trim();
+  const chain_id = document.getElementById("chainSelect").value;
+  if(!brand_name || !chain_id) return alert("All fields required");
+
+  await fetch(API+"/brands",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({brand_name, chain_id})});
+  document.getElementById("brandName").value="";
+  loadData();
+}
+
+// Edit Brand
+async function editBrand(id, oldName, oldChain){
+  const brand_name = prompt("Brand Name:", oldName);
+  if(!brand_name) return;
+  const chain_id = parseInt(prompt("Chain ID:", oldChain));
+  if(!chain_id) return;
+
+  await fetch(API+"/brands/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({brand_name, chain_id})});
+  loadData();
+}
+
+// Delete Brand
+async function deleteBrand(id){
+  if(!confirm("Delete this brand?")) return;
+  await fetch(API+"/brands/"+id+"/delete",{method:"PATCH"});
+  loadData();
+}
+
+// Filters
+function filterByCompany(name){
+  const filtered = brands.filter(b=>b.company_name===name);
+  populateBrandTable(filtered);
+}
+function filterByGroup(name){
+  const filtered = brands.filter(b=>b.group_name===name);
+  populateBrandTable(filtered);
+}
+
+loadData();
+</script>
+
+</body>
+</html>

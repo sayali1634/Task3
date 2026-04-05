@@ -95,4 +95,55 @@ app.patch("/chains/:id/delete",(req,res)=>{
   );
 });
 
+// ---------------- BRANDS ----------------
+
+// Add brand
+app.post("/brands",(req,res)=>{
+  const { brand_name, chain_id } = req.body;
+  if(!brand_name || !chain_id) return res.status(400).json({ message:"Brand and chain required" });
+
+  db.query("INSERT INTO brands(brand_name, chain_id, is_active) VALUES(?,?,true)", [brand_name, chain_id], (err,r)=>{
+    if(err) return res.status(500).json({ message:err.message });
+    res.json({ message:"Brand added" });
+  });
+});
+
+// Get brands (only active)
+app.get("/brands",(req,res)=>{
+  db.query(
+    `SELECT b.*, c.company_name, g.group_name, c.chain_id
+     FROM brands b
+     JOIN chains c ON b.chain_id = c.chain_id
+     JOIN groups g ON c.group_id = g.group_id
+     WHERE b.is_active = true`,
+    (err,r)=>{
+      if(err) return res.status(500).json({ message:err.message });
+      res.json(r);
+    }
+  );
+});
+
+// Edit brand
+app.put("/brands/:id",(req,res)=>{
+  const { brand_name, chain_id } = req.body;
+  db.query("UPDATE brands SET brand_name=?, chain_id=? WHERE brand_id=?",
+    [brand_name, chain_id, req.params.id],
+    (err,r)=>{
+      if(err) return res.status(500).json({ message:err.message });
+      res.json({ message:"Brand updated" });
+    }
+  );
+});
+
+// Soft Delete brand
+app.patch("/brands/:id/delete",(req,res)=>{
+  db.query("UPDATE brands SET is_active=false WHERE brand_id=?",
+    [req.params.id],
+    (err,r)=>{
+      if(err) return res.status(500).json({ message:err.message });
+      res.json({ message:"Brand deleted" });
+    }
+  );
+});
+
 app.listen(5000,()=>console.log("🚀 Backend running on http://localhost:5000"));
