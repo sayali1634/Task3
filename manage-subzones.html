@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manage Subzones</title>
+
+  <style>
+    body{margin:0;font-family:Arial;background:#f5f5f5;}
+
+    .sidebar{
+      width:200px;
+      background:#1e40af;
+      color:white;
+      position:fixed;
+      height:100%;
+      padding:20px;
+    }
+
+    .sidebar a{
+      display:block;
+      color:white;
+      text-decoration:none;
+      margin:10px 0;
+    }
+
+    .sidebar a.active{
+      background:#2563eb;
+      padding:5px;
+      border-radius:5px;
+    }
+
+    .main{
+      margin-left:220px;
+      padding:20px;
+    }
+
+    input,select{
+      padding:6px;
+      margin:5px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:20px;
+    }
+
+    th,td{
+      border:1px solid #ccc;
+      padding:10px;
+      text-align:center;
+    }
+
+    .btn{
+      padding:5px 10px;
+      border:none;
+      border-radius:5px;
+      cursor:pointer;
+    }
+
+    .add{background:#2563eb;color:white;}
+    .delete{background:red;color:white;}
+    .edit{background:green;color:white;}
+  </style>
+</head>
+
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <h3>Invoice</h3>
+  <a href="index.html">Dashboard</a>
+  <a href="manage-change.html">Manage Chains</a>
+  <a href="add-group.html">Manage Group</a>
+  <a href="manage-brands.html">Manage Brand</a>
+  <a href="manage-subzones.html" class="active">Manage Subzones</a>
+  <a href="manage-zones.html">Manage Zones</a>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <h2>Manage Subzones</h2>
+
+  <!-- Add / Update -->
+  <h3>Add / Update Subzone</h3>
+  <input type="text" id="name" placeholder="Enter Subzone Name">
+
+  <select id="brandSelect">
+    <option value="">Select Brand</option>
+  </select>
+
+  <button class="btn add" onclick="saveSubzone()">Add</button>
+  <button class="btn delete" onclick="cancelEdit()">Cancel</button>
+
+  <!-- Filter -->
+  <h3>Filter by Brand</h3>
+  <select id="filterBrand" onchange="filterData()">
+    <option value="">All Brands</option>
+  </select>
+
+  <!-- Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>Sr</th>
+        <th>Brand</th>
+        <th>Subzone</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody id="table"></tbody>
+  </table>
+
+</div>
+
+<script>
+const API = "http://localhost:5000";
+
+let subzones = [];
+let brands = [];
+let editId = null;
+
+// Load Data
+async function loadData(){
+  try{
+    brands = await fetch(API+"/brands").then(r=>r.json());
+    subzones = await fetch(API+"/subzones").then(r=>r.json());
+
+    loadDropdowns();
+    showData(subzones);
+
+  }catch(e){
+    alert("Server not running");
+    console.log(e);
+  }
+}
+
+// Load Dropdowns
+function loadDropdowns(){
+  let b = document.getElementById("brandSelect");
+  b.innerHTML = "<option value=''>Select Brand</option>";
+
+  brands.forEach(x=>{
+    b.innerHTML += `<option value="${x.brand_id}">${x.brand_name}</option>`;
+  });
+
+  let f = document.getElementById("filterBrand");
+  f.innerHTML = "<option value=''>All Brands</option>";
+
+  brands.forEach(x=>{
+    f.innerHTML += `<option value="${x.brand_id}">${x.brand_name}</option>`;
+  });
+}
+
+// Show Data
+function showData(data){
+  let t = document.getElementById("table");
+  t.innerHTML = "";
+
+  if(data.length === 0){
+    t.innerHTML = "<tr><td colspan='5'>No Data</td></tr>";
+    return;
+  }
+
+  data.forEach((x,i)=>{
+    t.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${x.brand_name}</td>
+        <td>${x.zone_name}</td>
+        <td>
+          <button class="btn edit" onclick="editSubzone(${x.subzone_id}, '${x.subzone_name}', ${x.brand_id})">Edit</button>
+        </td>
+        <td>
+          <button class="btn delete" onclick="deleteSubzone(${x.subzone_id})">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+// Edit
+function editSubzone(id, name, brand_id){
+  document.getElementById("name").value = name;
+  document.getElementById("brandSelect").value = brand_id;
+
+  editId = id;
+  document.querySelector(".add").innerText = "Update";
+}
+
+// Cancel Edit
+function cancelEdit(){
+  editId = null;
+  document.getElementById("name").value = "";
+  document.getElementById("brandSelect").value = "";
+  document.querySelector(".add").innerText = "Add";
+}
+
+// Add / Update
+async function saveSubzone(){
+
+  let name = document.getElementById("name").value.trim();
+  let brand_id = document.getElementById("brandSelect").value;
+
+  if(name === ""){
+    alert("Enter Subzone Name");
+    return;
+  }
+
+  if(brand_id === ""){
+    alert("Select Brand");
+    return;
+  }
+
+  // UPDATE
+  if(editId !== null){
+
+    await fetch(API+"/subzones/"+editId,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        subzone_name: name,
+        brand_id: Number(brand_id)
+      })
+    });
+
+    alert("Subzone Updated");
+
+  } else {
+
+    // ADD
+    await fetch(API+"/subzones",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        subzone_name: name,
+        brand_id: Number(brand_id)
+      })
+    });
+
+    alert("Subzone Added");
+  }
+
+  cancelEdit();
+  loadData();
+}
+
+// Delete
+async function deleteSubzone(id){
+  if(!confirm("Delete?")) return;
+
+  await fetch(API+"/subzones/"+id+"/delete",{method:"PATCH"});
+  loadData();
+}
+
+// Filter
+function filterData(){
+  let val = document.getElementById("filterBrand").value;
+
+  if(val === ""){
+    showData(subzones);
+  } else {
+    let filtered = subzones.filter(x => x.brand_id == val);
+    showData(filtered);
+  }
+}
+
+loadData();
+</script>
+
+</body>
+</html>
