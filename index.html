@@ -2,29 +2,67 @@
 <html>
 <head>
   <title>Dashboard</title>
+
   <style>
     body{margin:0;font-family:Arial;background:#f5f5f5;}
-    .sidebar{width:200px;background:#1e40af;color:white;position:fixed;height:100%;padding:20px;}
-    .sidebar a{color:white;text-decoration:none;display:block;margin:10px 0;}
-    .sidebar a.active{background:#2563eb;padding:5px;border-radius:5px;}
+
+    .sidebar{
+      width:200px;background:#1e40af;color:white;
+      position:fixed;height:100%;padding:20px;
+    }
+
+    .sidebar a{
+      color:white;text-decoration:none;display:block;margin:10px 0;
+    }
+
+    .sidebar a.active{
+      background:#2563eb;padding:5px;border-radius:5px;
+    }
+
     .main{margin-left:220px;padding:20px;}
+
     .cards{display:flex;gap:20px;margin-bottom:20px;}
-    .card{flex:1;padding:20px;border-radius:10px;color:white;text-align:center;}
-    .card.red{background:#ef4444;} 
-    .card.yellow{background:#facc15;color:black;}  
+
+    .card{
+      flex:1;padding:20px;border-radius:10px;
+      color:white;text-align:center;
+    }
+
+    .card.red{background:#ef4444;}
+    .card.yellow{background:#facc15;color:black;}
     .card.green{background:#1ba829;color:black;}
-    .card.blue{background: blue;color: black;}
-    .form-inline {display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
-    .form-inline input, .form-inline select {padding:5px;border-radius:5px;border:1px solid #ccc;}
-    table{width:100%;border-collapse:collapse;margin-top:20px;}
-    th,td{padding:10px;border:1px solid #ccc;text-align:left;}
-    .btn{padding:5px 10px;border:none;border-radius:5px;cursor:pointer;}
+    .card.blue{background:blue;color:white;}
+    .card.purple{background:purple;color:white;}
+
+    .form-inline{
+      display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;
+    }
+
+    input,select{
+      padding:5px;border-radius:5px;border:1px solid #ccc;
+    }
+
+    table{
+      width:100%;border-collapse:collapse;margin-top:20px;
+    }
+
+    th,td{
+      padding:10px;border:1px solid #ccc;text-align:left;
+    }
+
+    .btn{
+      padding:5px 10px;border:none;border-radius:5px;cursor:pointer;
+    }
+
     .btn.add{background:#2563eb;color:white;}
     .btn.edit{background:orange;color:white;}
     .btn.delete{background:red;color:white;}
   </style>
 </head>
+
 <body>
+
+<!-- Sidebar -->
 <div class="sidebar">
   <h3>Invoice</h3>
   <a href="index.html" class="active">Dashboard</a>
@@ -32,17 +70,20 @@
   <a href="add-group.html">Manage Group</a>
   <a href="manage-brands.html">Manage Brand</a>
   <a href="manage-subzones.html">Manage SubZones</a>
+  <a href="manage-estimates.html">Manage Estimates</a>
 </div>
 
+<!-- Main -->
 <div class="main">
   <h2>Dashboard</h2>
 
-  <!-- Total Cards -->
+  <!-- Cards -->
   <div class="cards">
     <div class="card red">Total Groups<br><h2 id="totalGroups">0</h2></div>
     <div class="card yellow">Total Chains<br><h2 id="totalChains">0</h2></div>
     <div class="card green">Total Brands<br><h2 id="totalBrands">0</h2></div>
     <div class="card blue">Total Zones<br><h2 id="totalZones">0</h2></div>
+    <div class="card purple">Total Estimates<br><h2 id="totalEstimates">0</h2></div>
   </div>
 
   <!-- Filters -->
@@ -53,11 +94,9 @@
     </select>
   </div>
 
-  <!-- Add Brand Form -->
+  <!-- Add Brand -->
   <div class="form-inline">
-    <select id="chainSelect">
-      <option value="">Select Company</option>
-    </select>
+    <select id="chainSelect"></select>
     <input type="text" id="brandName" placeholder="Brand Name">
     <button class="btn add" onclick="addBrand()">Add Brand</button>
   </div>
@@ -77,118 +116,150 @@
     </thead>
     <tbody id="table"></tbody>
   </table>
+
 </div>
 
 <script>
 const API = "http://localhost:5000";
-let chains = [];
-let groups = [];
-let brands = [];
 
-// Load all data
+let groups = [];
+let chains = [];
+let brands = [];
+let estimates = [];
+
+// Load Data
 async function loadData(){
   try{
-    [groups, chains, brands] = await Promise.all([
-      fetch(API+"/groups").then(res=>res.json()),
-      fetch(API+"/chains").then(res=>res.json()),
-      fetch(API+"/brands").then(res=>res.json())
+    [groups, chains, brands, estimates] = await Promise.all([
+      fetch(API+"/groups").then(r=>r.json()),
+      fetch(API+"/chains").then(r=>r.json()),
+      fetch(API+"/brands").then(r=>r.json()),
+      fetch(API+"/estimates").then(r=>r.json())
     ]);
 
-    // Update total cards
+    // Update Cards
     document.getElementById("totalGroups").innerText = groups.length;
     document.getElementById("totalChains").innerText = chains.length;
     document.getElementById("totalBrands").innerText = brands.length;
+    document.getElementById("totalZones").innerText = 0; // optional
+    document.getElementById("totalEstimates").innerText = estimates.length;
 
-    // Fill group filter dropdown
-    const groupFilter = document.getElementById("groupFilter");
-    groupFilter.innerHTML = `<option value="">All Groups</option>` +
+    // Group Filter
+    let gf = document.getElementById("groupFilter");
+    gf.innerHTML = `<option value="">All Groups</option>` +
       groups.map(g=>`<option value="${g.group_id}">${g.group_name}</option>`).join("");
 
-    // Fill chain dropdown for Add Brand
-    const chainSelect = document.getElementById("chainSelect");
-    chainSelect.innerHTML = `<option value="">Select Company</option>` +
+    // Chain Dropdown
+    let cs = document.getElementById("chainSelect");
+    cs.innerHTML = `<option value="">Select Company</option>` +
       chains.map(c=>`<option value="${c.chain_id}">${c.company_name}</option>`).join("");
 
-    // Render table
     renderTable(chains);
+
   }catch(err){
-    console.error("Error loading data:", err);
+    console.log(err);
+    alert("Server not running");
   }
 }
 
-// Render table rows
+// Render Table
 function renderTable(data){
-  const table = document.getElementById("table");
-  table.innerHTML = "";
-  if(data.length===0){ 
-    table.innerHTML="<tr><td colspan='7'>No records found</td></tr>"; 
-    return; 
+  let t = document.getElementById("table");
+  t.innerHTML = "";
+
+  if(data.length===0){
+    t.innerHTML="<tr><td colspan='7'>No Data</td></tr>";
+    return;
   }
 
   data.forEach((c,i)=>{
-    const groupName = groups.find(g=>g.group_id==c.group_id)?.group_name || "";
-    const brandCount = brands.filter(b=>b.chain_id===c.chain_id).length;
-    table.innerHTML += `<tr>
-      <td>${i+1}</td>
-      <td>${groupName}</td>
-      <td>${c.company_name}</td>
-      <td>${c.gstn_no}</td>
-      <td>${brandCount}</td>
-      <td><button class="btn edit" onclick="editChain(${c.chain_id})">Edit</button></td>
-      <td><button class="btn delete" onclick="deleteChain(${c.chain_id})">Delete</button></td>
-    </tr>`;
+    let groupName = groups.find(g=>g.group_id==c.group_id)?.group_name || "";
+    let brandCount = brands.filter(b=>b.chain_id==c.chain_id).length;
+
+    t.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${groupName}</td>
+        <td>${c.company_name}</td>
+        <td>${c.gstn_no}</td>
+        <td>${brandCount}</td>
+        <td><button class="btn edit" onclick="editChain(${c.chain_id})">Edit</button></td>
+        <td><button class="btn delete" onclick="deleteChain(${c.chain_id})">Delete</button></td>
+      </tr>
+    `;
   });
 }
 
-// Apply filters
+// Filter
 function applyFilters(){
-  const company = document.getElementById("companyFilter").value.toLowerCase();
-  const groupId = document.getElementById("groupFilter").value;
+  let company = document.getElementById("companyFilter").value.toLowerCase();
+  let groupId = document.getElementById("groupFilter").value;
 
   let filtered = chains;
-  if(company) filtered = filtered.filter(c=>c.company_name.toLowerCase().includes(company));
-  if(groupId) filtered = filtered.filter(c=>c.group_id==groupId);
+
+  if(company){
+    filtered = filtered.filter(c=>c.company_name.toLowerCase().includes(company));
+  }
+
+  if(groupId){
+    filtered = filtered.filter(c=>c.group_id == groupId);
+  }
 
   renderTable(filtered);
 }
 
 // Add Brand
 async function addBrand(){
-  const chain_id = document.getElementById("chainSelect").value;
-  const brand_name = document.getElementById("brandName").value.trim();
-  if(!chain_id || !brand_name) return alert("Select company and enter brand name");
+  let chain_id = document.getElementById("chainSelect").value;
+  let brand_name = document.getElementById("brandName").value.trim();
+
+  if(!chain_id || !brand_name){
+    alert("Select company & enter brand");
+    return;
+  }
 
   await fetch(API+"/brands",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({brand_name, chain_id})
   });
-  document.getElementById("brandName").value = "";
+
+  document.getElementById("brandName").value="";
   loadData();
 }
 
-// Edit chain
+// Edit Chain
 async function editChain(id){
-  const chain = chains.find(c=>c.chain_id==id);
-  const name = prompt("Company Name", chain.company_name);
-  const gst = prompt("GST Number", chain.gstn_no);
+  let c = chains.find(x=>x.chain_id==id);
+
+  let name = prompt("Company Name", c.company_name);
+  let gst = prompt("GST Number", c.gstn_no);
+
   if(!name || !gst) return;
+
   await fetch(API+"/chains/"+id,{
     method:"PUT",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({company_name:name,gstn_no:gst,group_id:chain.group_id})
+    body: JSON.stringify({
+      company_name:name,
+      gstn_no:gst,
+      group_id:c.group_id
+    })
   });
+
   loadData();
 }
 
-// Delete chain
+// Delete Chain
 async function deleteChain(id){
-  if(!confirm("Delete this chain?")) return;
+  if(!confirm("Delete?")) return;
+
   await fetch(API+"/chains/"+id+"/delete",{method:"PATCH"});
   loadData();
 }
 
 loadData();
 </script>
+
 </body>
 </html>

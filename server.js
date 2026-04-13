@@ -4,7 +4,9 @@ const mysql = require("mysql2");
 const cors = require("cors");
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: '*'
+}));
 app.use(express.json());
 
 // ✅ DB CONNECTION (FIXED PORT 3306)
@@ -285,6 +287,95 @@ app.patch("/zones/:id/delete",(req,res)=>{
   );
 });
 
+// ================= ESTIMATES =================
+
+// ADD
+app.post("/estimates",(req,res)=>{
+
+  const {
+    group_name,
+    chain_name,
+    brand_name,
+    zone_name,
+    service_details,
+    total_quantity,
+    cost_per_quantity
+  } = req.body;
+
+  if(!group_name || !chain_name){
+    return res.status(400).json({message:"Required fields missing"});
+  }
+
+  const total_amount = total_quantity * cost_per_quantity;
+
+  db.query(
+    `INSERT INTO estimates
+    (group_name, chain_name, brand_name, zone_name, service_details, total_quantity, cost_per_quantity, total_amount)
+    VALUES (?,?,?,?,?,?,?,?)`,
+    [group_name, chain_name, brand_name, zone_name, service_details, total_quantity, cost_per_quantity, total_amount],
+    (err)=>{
+      if(err) return res.status(500).json({message:err.message});
+      res.json({message:"Estimate added"});
+    }
+  );
+});
+
+// GET
+app.get("/estimates",(req,res)=>{
+  db.query(
+    "SELECT * FROM estimates WHERE is_active=true",
+    (err,r)=>{
+      if(err) return res.status(500).json({message:err.message});
+      res.json(r);
+    }
+  );
+});
+
+// UPDATE
+app.put("/estimates/:id",(req,res)=>{
+
+  const {
+    group_name,
+    chain_name,
+    brand_name,
+    zone_name,
+    service_details,
+    total_quantity,
+    cost_per_quantity
+  } = req.body;
+
+  const total_amount = total_quantity * cost_per_quantity;
+
+  db.query(
+    `UPDATE estimates SET
+      group_name=?,
+      chain_name=?,
+      brand_name=?,
+      zone_name=?,
+      service_details=?,
+      total_quantity=?,
+      cost_per_quantity=?,
+      total_amount=?
+     WHERE estimate_id=?`,
+    [group_name, chain_name, brand_name, zone_name, service_details, total_quantity, cost_per_quantity, total_amount, req.params.id],
+    (err)=>{
+      if(err) return res.status(500).json({message:err.message});
+      res.json({message:"Updated"});
+    }
+  );
+});
+
+// DELETE (SOFT)
+app.patch("/estimates/:id/delete",(req,res)=>{
+  db.query(
+    "UPDATE estimates SET is_active=false WHERE estimate_id=?",
+    [req.params.id],
+    (err)=>{
+      if(err) return res.status(500).json({message:err.message});
+      res.json({message:"Deleted"});
+    }
+  );
+});
 
 // ================= START SERVER =================
 app.listen(5000,()=>{

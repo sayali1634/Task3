@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manage Estimate</title>
+
+  <style>
+    body{margin:0;font-family:Arial;background:#f5f5f5;}
+
+    .sidebar{
+      width:200px;background:#1e40af;color:white;
+      position:fixed;height:100%;padding:20px;
+    }
+
+    .sidebar a{
+      display:block;color:white;text-decoration:none;margin:10px 0;
+    }
+
+    .sidebar a.active{
+      background:#2563eb;padding:5px;border-radius:5px;
+    }
+
+    .main{margin-left:220px;padding:20px;}
+
+    .form-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:15px;
+      background:white;
+      padding:20px;
+      border-radius:10px;
+    }
+
+    input,select,textarea{
+      width:100%;
+      padding:8px;
+      margin-top:5px;
+    }
+
+    .btn{
+      padding:8px 12px;
+      border:none;border-radius:5px;
+      cursor:pointer;
+      color:white;
+    }
+
+    .add{background:green;}
+    .edit{background:orange;}
+    .delete{background:red;}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:20px;
+      background:white;
+    }
+
+    th,td{
+      border:1px solid #ccc;
+      padding:10px;
+      text-align:center;
+    }
+
+    .card{
+      background:#16a34a;
+      color:white;
+      padding:15px;
+      border-radius:10px;
+      width:250px;
+      margin-top:20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="sidebar">
+  <h3>Invoice</h3>
+  <a href="index.html">Dashboard</a>
+  <a href="manage-group.html">Manage Groups</a>
+  <a href="manage-change.html">Manage Chain</a>
+  <a href="manage-brands.html">Manage Brands</a>
+  <a href="manage-subzones.html">Manage Subzones</a>
+  <a href="manage-estimate.html" class="active">Manage Estimate</a>
+</div>
+
+<div class="main">
+
+  <h2>Manage Estimate</h2>
+
+  <!-- TOTAL CARD -->
+  <div class="card">
+  <h3>Total Estimates</h3>
+  <h2 id="totalCount">0</h2>
+</div>
+
+  <!-- FORM -->
+  <div class="form-grid">
+
+    <div>
+      <label>Group</label>
+      <select id="group"></select>
+
+      <label>Chain</label>
+      <select id="chain"></select>
+
+      <label>Brand</label>
+      <select id="brand"></select>
+
+      <label>Zone</label>
+      <select id="zone"></select>
+
+      <label>Service</label>
+      <input type="text" id="service">
+    </div>
+
+    <div>
+      <label>Quantity</label>
+      <input type="number" id="qty" oninput="calcTotal()">
+
+      <label>Price</label>
+      <input type="number" id="price" oninput="calcTotal()">
+
+      <label>Total</label>
+      <input type="number" id="total" readonly>
+
+      <label>Date</label>
+      <input type="date" id="date">
+
+      <label>Details</label>
+      <textarea id="details"></textarea>
+    </div>
+
+  </div>
+
+  <button class="btn add" onclick="save()">Save Estimate</button>
+
+  <!-- TABLE -->
+  <table>
+    <thead>
+      <tr>
+        <th>Sr</th>
+        <th>Group</th>
+        <th>Chain</th>
+        <th>Brand</th>
+        <th>Zone</th>
+        <th>Service</th>
+        <th>Qty</th>
+        <th>Price</th>
+        <th>Total</th>
+        <th>Date</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody id="table"></tbody>
+  </table>
+
+</div>
+
+<script>
+const API = "http://localhost:5000";
+
+let editId = null;
+
+// LOAD ALL DATA
+async function load(){
+
+  let groups = await fetch(API+"/groups").then(r=>r.json());
+  let chains = await fetch(API+"/chains").then(r=>r.json());
+  let brands = await fetch(API+"/brands").then(r=>r.json());
+  let zones = await fetch(API+"/zones").then(r=>r.json());
+  let estimates = await fetch(API+"/estimates").then(r=>r.json());
+
+  fill("group", groups, "group_name");
+  fill("chain", chains, "company_name");
+  fill("brand", brands, "brand_name");
+  fill("zone", zones, "zone_name");
+
+  showData(estimates);
+  showTotal(estimates);
+}
+
+// DROPDOWN FILL
+function fill(id, data, key){
+  let el = document.getElementById(id);
+  el.innerHTML = "<option value=''>Select</option>";
+
+  data.forEach(x=>{
+    el.innerHTML += `<option value="${x[key]}">${x[key]}</option>`;
+  });
+}
+
+// CALCULATE TOTAL
+function calcTotal(){
+  total.value = (qty.value || 0) * (price.value || 0);
+}
+
+// SAVE / UPDATE
+async function save(){
+
+  let obj = {
+    group_name: group.value,
+    chain_name: chain.value,
+    brand_name: brand.value,
+    zone_name: zone.value,
+    service_details: service.value,
+    total_quantity: Number(qty.value),
+    cost_per_quantity: Number(price.value),
+    total_amount: Number(total.value),
+    expected_delivery_date: date.value,
+    other_details: details.value
+  };
+
+  if(editId){
+    await fetch(API+"/estimates/"+editId,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(obj)
+    });
+    alert("Updated ✅");
+  } else {
+    await fetch(API+"/estimates",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(obj)
+    });
+    alert("Saved ✅");
+  }
+
+  clearForm();
+  load();
+}
+
+// CLEAR FORM
+function clearForm(){
+  editId = null;
+  document.querySelectorAll("input, textarea").forEach(i=>i.value="");
+}
+
+// SHOW TABLE
+function showData(data){
+  let t = document.getElementById("table");
+  t.innerHTML = "";
+
+  data.forEach((x,i)=>{
+    t.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${x.group_name}</td>
+        <td>${x.chain_name}</td>
+        <td>${x.brand_name}</td>
+        <td>${x.zone_name}</td>
+        <td>${x.service_details}</td>
+        <td>${x.total_quantity}</td>
+        <td>${x.cost_per_quantity}</td>
+        <td>${x.total_amount}</td>
+        <td>${x.expected_delivery_date}</td>
+        <td><button class="btn edit" onclick="edit(${x.estimate_id})">Edit</button></td>
+        <td><button class="btn delete" onclick="del(${x.estimate_id})">Delete</button></td>
+      </tr>
+    `;
+  });
+}
+
+// TOTAL SUM
+function showTotal(data){
+  document.getElementById("totalCount").innerText = data.length;
+}
+// EDIT
+async function edit(id){
+  let data = await fetch(API+"/estimates").then(r=>r.json());
+  let x = data.find(e=>e.estimate_id == id);
+
+  group.value = x.group_name;
+  chain.value = x.chain_name;
+  brand.value = x.brand_name;
+  zone.value = x.zone_name;
+  service.value = x.service_details;
+  qty.value = x.total_quantity;
+  price.value = x.cost_per_quantity;
+  total.value = x.total_amount;
+  date.value = x.expected_delivery_date;
+  details.value = x.other_details;
+
+  editId = id;
+}
+
+// DELETE
+async function del(id){
+  if(!confirm("Delete?")) return;
+
+  await fetch(API+"/estimates/"+id+"/delete",{method:"PATCH"});
+  load();
+}
+
+load();
+</script>
+
+</body>
+</html>
