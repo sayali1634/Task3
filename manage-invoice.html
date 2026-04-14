@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Invoice System</title>
+  <style>
+    body { font-family: Arial; background:#f4f6f9; margin:0; display:flex; }
+
+    .sidebar {
+      width:220px;
+      background:#1e3a8a;
+      color:white;
+      height:100vh;
+      padding:20px;
+      position:fixed;
+    }
+
+    .sidebar a {
+      display:block;
+      color:white;
+      padding:10px;
+      text-decoration:none;
+    }
+
+    .main {
+      margin-left:240px;
+      padding:20px;
+      width:100%;
+    }
+
+    .card {
+      background:white;
+      padding:20px;
+      border-radius:10px;
+      margin-bottom:20px;
+    }
+
+    input, textarea {
+      padding:10px;
+      margin:5px;
+      width:220px;
+    }
+
+    button {
+      padding:10px 15px;
+      background:#1e3a8a;
+      color:white;
+      border:none;
+      cursor:pointer;
+    }
+
+    table {
+      width:100%;
+      background:white;
+      border-collapse:collapse;
+    }
+
+    th, td {
+      border:1px solid #ddd;
+      padding:10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="sidebar">
+  <h2>IMS Panel</h2>
+  <a href="#">Dashboard</a>
+  <a href="#">Invoices</a>
+</div>
+
+<div class="main">
+
+  <!-- FORM -->
+  <div class="card">
+    <h2>Create Invoice</h2>
+
+    <input id="estimated_id" placeholder="Estimate ID">
+    <input id="chain_id" placeholder="Chain ID">
+    <input id="service_details" placeholder="Service Details">
+    <input id="qty" type="number" placeholder="Qty">
+    <input id="cost_per_qty" type="number" placeholder="Cost per Qty">
+    <input id="balance" type="number" placeholder="Balance">
+    <input id="date_of_service" type="date">
+    <input id="delivery_details" placeholder="Delivery Details">
+    <input id="email_id" placeholder="Email">
+
+    <br><br>
+    <button onclick="createInvoice()">Save Invoice</button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card">
+    <h2>Invoice List</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Invoice No</th>
+          <th>Estimate</th>
+          <th>Chain</th>
+          <th>Service</th>
+          <th>Qty</th>
+          <th>Cost</th>
+          <th>Total</th>
+          <th>Balance</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+      <tbody id="tableData"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+
+const API = "http://localhost:5000/invoices";
+
+// CREATE INVOICE
+function createInvoice() {
+
+  const qty = parseFloat(document.getElementById("qty").value);
+  const cost = parseFloat(document.getElementById("cost_per_qty").value);
+
+  const data = {
+    estimated_id: document.getElementById("estimated_id").value,
+    chain_id: document.getElementById("chain_id").value,
+    service_details: document.getElementById("service_details").value,
+    qty: qty,
+    cost_per_qty: cost,
+    amount_payable: qty * cost,
+    balance: document.getElementById("balance").value,
+    date_of_service: document.getElementById("date_of_service").value,
+    delivery_details: document.getElementById("delivery_details").value,
+    email_id: document.getElementById("email_id").value
+  };
+
+  fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(res => {
+
+    console.log(res);
+
+    if(res.success){
+      alert("Invoice Created: " + res.invoice_no);
+      loadInvoices();
+    } else {
+      alert("Error creating invoice");
+    }
+  });
+}
+
+// LOAD INVOICES
+function loadInvoices() {
+
+  fetch(API)
+    .then(res => res.json())
+    .then(data => {
+
+      let rows = "";
+
+      data.forEach(i => {
+        rows += `
+          <tr>
+            <td>${i.id}</td>
+            <td>${i.invoice_no}</td>
+            <td>${i.estimated_id}</td>
+            <td>${i.chain_id}</td>
+            <td>${i.service_details}</td>
+            <td>${i.qty}</td>
+            <td>${i.cost_per_qty}</td>
+            <td>${i.amount_payable}</td>
+            <td>${i.balance}</td>
+            <td>${i.email_id}</td>
+          </tr>
+        `;
+      });
+
+      document.getElementById("tableData").innerHTML = rows;
+    });
+}
+
+loadInvoices();
+
+</script>
+
+</body>
+</html>

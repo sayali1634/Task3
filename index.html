@@ -62,15 +62,18 @@
 
 <body>
 
-<!-- Sidebar -->
+<!-- SIDEBAR -->
 <div class="sidebar">
   <h3>Invoice</h3>
+
   <a href="index.html" class="active">Dashboard</a>
-  <a href="manage-change.html">Manage Chains</a>
-  <a href="add-group.html">Manage Group</a>
-  <a href="manage-brands.html">Manage Brand</a>
-  <a href="manage-subzones.html">Manage SubZones</a>
-  <a href="manage-estimates.html">Manage Estimates</a>
+  <a href="add-group.html">Manage Groups</a>
+  <a href="manage-change.html">Manage Chain</a>
+  <a href="manage-brands.html">Manage Brands</a>
+  <a href="manage-subzones.html">Manage Subzones</a>
+  <a href="manage-estimates.html">Manage Estimate</a>
+  <a href="manage-invoices.html">Manage Invoice</a>
+
 </div>
 
 <!-- Main -->
@@ -130,38 +133,36 @@ let estimates = [];
 // Load Data
 async function loadData(){
   try{
-    [groups, chains, brands, estimates] = await Promise.all([
-      fetch(API+"/groups").then(r=>r.json()),
-      fetch(API+"/chains").then(r=>r.json()),
-      fetch(API+"/brands").then(r=>r.json()),
-      fetch(API+"/estimates").then(r=>r.json())
+
+    const [
+      groups,
+      chains,
+      brands,
+      zones,
+      estimates,
+      invoices
+    ] = await Promise.all([
+      fetch(API+"/counts/groups").then(r=>r.json()),
+      fetch(API+"/counts/chains").then(r=>r.json()),
+      fetch(API+"/counts/brands").then(r=>r.json()),
+      fetch(API+"/counts/zones").then(r=>r.json()),
+      fetch(API+"/counts/estimates").then(r=>r.json()),
+      fetch(API+"/counts/invoices").then(r=>r.json())
     ]);
 
-    // Update Cards
-    document.getElementById("totalGroups").innerText = groups.length;
-    document.getElementById("totalChains").innerText = chains.length;
-    document.getElementById("totalBrands").innerText = brands.length;
-    document.getElementById("totalZones").innerText = 0; // optional
-    document.getElementById("totalEstimates").innerText = estimates.length;
-
-    // Group Filter
-    let gf = document.getElementById("groupFilter");
-    gf.innerHTML = `<option value="">All Groups</option>` +
-      groups.map(g=>`<option value="${g.group_id}">${g.group_name}</option>`).join("");
-
-    // Chain Dropdown
-    let cs = document.getElementById("chainSelect");
-    cs.innerHTML = `<option value="">Select Company</option>` +
-      chains.map(c=>`<option value="${c.chain_id}">${c.company_name}</option>`).join("");
-
-    renderTable(chains);
+    // UPDATE CARDS
+    document.getElementById("totalGroups").innerText = groups.total;
+    document.getElementById("totalChains").innerText = chains.total;
+    document.getElementById("totalBrands").innerText = brands.total;
+    document.getElementById("totalZones").innerText = zones.total;
+    document.getElementById("totalEstimates").innerText = estimates.total;
+    document.getElementById("totalInvoices").innerText = invoices.total;
 
   }catch(err){
     console.log(err);
     alert("Server not running");
   }
 }
-
 // Render Table
 function renderTable(data){
   let t = document.getElementById("table");

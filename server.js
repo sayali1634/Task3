@@ -1,297 +1,189 @@
-// server.js
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
 
 const app = express();
-app.use(cors({
-  origin: '*'
-}));
+
+app.use(cors());
 app.use(express.json());
 
-// ✅ DB CONNECTION (FIXED PORT 3306)
+// ================= DB CONNECTION =================
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "",   // put your MySQL password if any
+  password: "",
   database: "groupdb",
-  port: 3307      // 🔥 IMPORTANT FIX
+  port: 3307   // ⚠️ change to 3307 only if your MySQL runs on 3307
 });
 
 db.connect(err => {
-  if(err){
+  if (err) {
     console.log("❌ DB Error:", err);
   } else {
-    console.log("✅ DB Connected");
+    console.log("✅ MySQL Connected");
   }
 });
 
-
-// ================= GROUP =================
-
-// Add group
-app.post("/groups",(req,res)=>{
+// ================= GROUPS =================
+app.post("/groups", (req, res) => {
   const { group_name } = req.body;
 
-  if(!group_name){
-    return res.status(400).json({ message:"Group required" });
-  }
-
   db.query(
-    "INSERT INTO groups(group_name,is_active) VALUES(?,true)",
+    "INSERT INTO groups(group_name,is_active) VALUES(?,1)",
     [group_name],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Group added" });
+    err => {
+      if (err) return res.status(500).json(err);
+      res.json({ message: "Group added" });
     }
   );
 });
 
-// Get groups
-app.get("/groups",(req,res)=>{
-  db.query(
-    "SELECT * FROM groups WHERE is_active=true",
-    (err,r)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json(r);
-    }
-  );
+app.get("/groups", (req, res) => {
+  db.query("SELECT * FROM groups WHERE is_active=1", (err, rows) => {
+    if (err) return res.status(500).json(err);
+    res.json(rows);
+  });
 });
-
 
 // ================= CHAINS =================
-
-app.post("/chains",(req,res)=>{
-  const { company_name, gstn_no, group_id } = req.body;
-
-  if(!company_name || !gstn_no || !group_id){
-    return res.status(400).json({ message:"All fields required" });
-  }
-
-  db.query(
-    "INSERT INTO chains(company_name,gstn_no,group_id,is_active,created_at,updated_at) VALUES(?,?,?,?,NOW(),NOW())",
-    [company_name,gstn_no,group_id,true],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Chain added" });
-    }
-  );
-});
-
-app.get("/chains",(req,res)=>{
-  db.query(
-    `SELECT c.*, g.group_name 
-     FROM chains c 
-     JOIN groups g ON c.group_id=g.group_id
-     WHERE c.is_active=true`,
-    (err,r)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json(r);
-    }
-  );
-});
-
-app.put("/chains/:id",(req,res)=>{
+app.post("/chains", (req, res) => {
   const { company_name, gstn_no, group_id } = req.body;
 
   db.query(
-    "UPDATE chains SET company_name=?, gstn_no=?, group_id=?, updated_at=NOW() WHERE chain_id=?",
-    [company_name,gstn_no,group_id,req.params.id],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Chain updated" });
+    "INSERT INTO chains(company_name,gstn_no,group_id,is_active) VALUES(?,?,?,1)",
+    [company_name, gstn_no, group_id],
+    err => {
+      if (err) return res.status(500).json(err);
+      res.json({ message: "Chain added" });
     }
   );
 });
 
-app.patch("/chains/:id/delete",(req,res)=>{
+app.get("/chains", (req, res) => {
   db.query(
-    "UPDATE chains SET is_active=false WHERE chain_id=?",
-    [req.params.id],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Chain deleted" });
+    `SELECT c.*, g.group_name
+     FROM chains c
+     JOIN groups g ON c.group_id = g.group_id
+     WHERE c.is_active=1`,
+    (err, rows) => {
+      if (err) return res.status(500).json(err);
+      res.json(rows);
     }
   );
 });
-
 
 // ================= BRANDS =================
-
-app.post("/brands",(req,res)=>{
+app.post("/brands", (req, res) => {
   const { brand_name, chain_id } = req.body;
 
-  if(!brand_name || !chain_id){
-    return res.status(400).json({ message:"Brand & chain required" });
-  }
-
   db.query(
-    "INSERT INTO brands(brand_name,chain_id,is_active) VALUES(?,?,true)",
-    [brand_name,chain_id],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Brand added" });
+    "INSERT INTO brands(brand_name,chain_id,is_active) VALUES(?,?,1)",
+    [brand_name, chain_id],
+    err => {
+      if (err) return res.status(500).json(err);
+      res.json({ message: "Brand added" });
     }
   );
 });
 
-app.get("/brands",(req,res)=>{
+app.get("/brands", (req, res) => {
   db.query(
-    `SELECT b.*, c.company_name, g.group_name
+    `SELECT b.*, c.company_name
      FROM brands b
-     JOIN chains c ON b.chain_id=c.chain_id
-     JOIN groups g ON c.group_id=g.group_id
-     WHERE b.is_active=true`,
-    (err,r)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json(r);
+     JOIN chains c ON b.chain_id = c.chain_id
+     WHERE b.is_active=1`,
+    (err, rows) => {
+      if (err) return res.status(500).json(err);
+      res.json(rows);
     }
   );
 });
 
-app.put("/brands/:id",(req,res)=>{
-  const { brand_name, chain_id } = req.body;
+// ================= ZONES =================
+app.post("/zones", (req, res) => {
+  const { zone_name, brand_id } = req.body;
 
   db.query(
-    "UPDATE brands SET brand_name=?, chain_id=? WHERE brand_id=?",
-    [brand_name,chain_id,req.params.id],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Brand updated" });
+    "INSERT INTO zones(zone_name,brand_id,is_active) VALUES(?,?,1)",
+    [zone_name, brand_id],
+    err => {
+      if (err) return res.status(500).json(err);
+      res.json({ message: "Zone added" });
     }
   );
 });
 
-app.patch("/brands/:id/delete",(req,res)=>{
+app.get("/zones", (req, res) => {
   db.query(
-    "UPDATE brands SET is_active=false WHERE brand_id=?",
-    [req.params.id],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Brand deleted" });
+    `SELECT z.*, b.brand_name
+     FROM zones z
+     JOIN brands b ON z.brand_id = b.brand_id
+     WHERE z.is_active=1`,
+    (err, rows) => {
+      if (err) return res.status(500).json(err);
+      res.json(rows);
     }
   );
 });
-
 
 // ================= SUBZONES =================
 
-app.post("/subzones",(req,res)=>{
-  const { subzone_name, brand_id } = req.body;
-
-  if(!subzone_name || !brand_id){
-    return res.status(400).json({ message:"Subzone & brand required" });
-  }
-
-  db.query(
-    "INSERT INTO zones(subzone_name,brand_id,is_active,created_at,updated_at) VALUES(?,?,true,NOW(),NOW())",
-    [subzone_name,brand_id],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Subzone added" });
-    }
-  );
-});
-
-app.get("/subzones",(req,res)=>{
-  db.query(
-    `SELECT s.*, b.brand_name, b.brand_id
-     FROM zones s
-     JOIN brands b ON s.brand_id=b.brand_id
-     WHERE s.is_active=true`,
-    (err,r)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json(r);
-    }
-  );
-});
-
-app.put("/subzones/:id",(req,res)=>{
+// ADD SUBZONE
+app.post("/subzones", (req, res) => {
   const { subzone_name, brand_id } = req.body;
 
   db.query(
-    "UPDATE zones SET zone_name=?, brand_id=?, updated_at=NOW() WHERE zone_id=?",
-    [subzone_name,brand_id,req.params.id],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Subzone updated" });
+    "INSERT INTO subzones(subzone_name, brand_id, is_active) VALUES(?,?,1)",
+    [subzone_name, brand_id],
+    (err) => {
+      if (err) return res.status(500).json(err);
+      res.json({ message: "Subzone added" });
     }
   );
 });
 
-app.patch("/subzones/:id/delete",(req,res)=>{
+// GET SUBZONES (JOIN BRAND NAME)
+app.get("/subzones", (req, res) => {
   db.query(
-    "UPDATE zones SET is_active=false WHERE zone_id=?",
+    `SELECT s.*, b.brand_name 
+     FROM subzones s
+     JOIN brands b ON s.brand_id = b.brand_id
+     WHERE s.is_active=1`,
+    (err, rows) => {
+      if (err) return res.status(500).json(err);
+      res.json(rows);
+    }
+  );
+});
+
+// UPDATE SUBZONE
+app.put("/subzones/:id", (req, res) => {
+  const { subzone_name, brand_id } = req.body;
+
+  db.query(
+    "UPDATE subzones SET subzone_name=?, brand_id=? WHERE subzone_id=?",
+    [subzone_name, brand_id, req.params.id],
+    (err) => {
+      if (err) return res.status(500).json(err);
+      res.json({ message: "Updated" });
+    }
+  );
+});
+
+// DELETE (soft delete)
+app.patch("/subzones/:id/delete", (req, res) => {
+  db.query(
+    "UPDATE subzones SET is_active=0 WHERE subzone_id=?",
     [req.params.id],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Subzone deleted" });
-    }
-  );
-});
-
-
-// ================= ZONES =================
-
-app.post("/zones",(req,res)=>{
-  const { zone_name, brand_id } = req.body;
-
-  if(!zone_name || !brand_id){
-    return res.status(400).json({ message:"Zone & brand required" });
-  }
-
-  db.query(
-    "INSERT INTO zones(zone_name,brand_id,is_active,created_at,updated_at) VALUES(?,?,true,NOW(),NOW())",
-    [zone_name,brand_id],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Zone added" });
-    }
-  );
-});
-
-app.get("/zones",(req,res)=>{
-  db.query(
-    `SELECT z.*, b.brand_name, b.brand_id
-     FROM zones z
-     JOIN brands b ON z.brand_id=b.brand_id
-     WHERE z.is_active=true`,
-    (err,r)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json(r);
-    }
-  );
-});
-
-app.put("/zones/:id",(req,res)=>{
-  const { zone_name, brand_id } = req.body;
-
-  db.query(
-    "UPDATE zones SET zone_name=?, brand_id=?, updated_at=NOW() WHERE zone_id=?",
-    [zone_name,brand_id,req.params.id],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Zone updated" });
-    }
-  );
-});
-
-app.patch("/zones/:id/delete",(req,res)=>{
-  db.query(
-    "UPDATE zones SET is_active=false WHERE zone_id=?",
-    [req.params.id],
-    (err)=>{
-      if(err) return res.status(500).json({ message:err.message });
-      res.json({ message:"Zone deleted" });
+    (err) => {
+      if (err) return res.status(500).json(err);
+      res.json({ message: "Deleted" });
     }
   );
 });
 
 // ================= ESTIMATES =================
-
-// ADD
-app.post("/estimates",(req,res)=>{
-
+app.post("/estimates", (req, res) => {
   const {
     group_name,
     chain_name,
@@ -299,85 +191,156 @@ app.post("/estimates",(req,res)=>{
     zone_name,
     service_details,
     total_quantity,
-    cost_per_quantity
+    cost_per_quantity,
+    expected_delivery_date,
+    other_details
   } = req.body;
 
-  if(!group_name || !chain_name){
-    return res.status(400).json({message:"Required fields missing"});
-  }
-
-  const total_amount = total_quantity * cost_per_quantity;
+  const total_amount = Number(total_quantity) * Number(cost_per_quantity);
 
   db.query(
     `INSERT INTO estimates
-    (group_name, chain_name, brand_name, zone_name, service_details, total_quantity, cost_per_quantity, total_amount)
-    VALUES (?,?,?,?,?,?,?,?)`,
-    [group_name, chain_name, brand_name, zone_name, service_details, total_quantity, cost_per_quantity, total_amount],
-    (err)=>{
-      if(err) return res.status(500).json({message:err.message});
-      res.json({message:"Estimate added"});
+    (group_name,chain_name,brand_name,zone_name,
+     service_details,total_quantity,cost_per_quantity,total_amount,
+     expected_delivery_date,other_details,is_active)
+     VALUES (?,?,?,?,?,?,?,?,?,?,1)`,
+
+    [
+      group_name,
+      chain_name,
+      brand_name,
+      zone_name,
+      service_details,
+      total_quantity,
+      cost_per_quantity,
+      total_amount,
+      expected_delivery_date,
+      other_details
+    ],
+
+    err => {
+      if (err) return res.status(500).json(err);
+      res.json({ message: "Estimate saved" });
     }
   );
 });
 
-// GET
-app.get("/estimates",(req,res)=>{
+app.get("/estimates", (req, res) => {
   db.query(
-    "SELECT * FROM estimates WHERE is_active=true",
-    (err,r)=>{
-      if(err) return res.status(500).json({message:err.message});
-      res.json(r);
+    "SELECT * FROM estimates WHERE is_active=1 ORDER BY estimate_id DESC",
+    (err, rows) => {
+      if (err) return res.status(500).json(err);
+      res.json(rows);
     }
   );
 });
 
-// UPDATE
-app.put("/estimates/:id",(req,res)=>{
+// ================= INVOICES =================
+app.post("/invoices", (req, res) => {
 
   const {
-    group_name,
-    chain_name,
-    brand_name,
-    zone_name,
+    estimated_id,
+    chain_id,
     service_details,
-    total_quantity,
-    cost_per_quantity
+    qty,
+    cost_per_qty,
+    amount_payable,
+    balance,
+    date_of_service,
+    delivery_details,
+    email_id
   } = req.body;
 
-  const total_amount = total_quantity * cost_per_quantity;
+  const invoice_no = Math.floor(1000 + Math.random() * 9000);
 
+  const sql = `
+    INSERT INTO invoices
+    (invoice_no, estimated_id, chain_id, service_details, qty,
+     cost_per_qty, amount_payable, balance, date_of_service,
+     delivery_details, email_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(sql, [
+    invoice_no,
+    estimated_id,
+    chain_id,
+    service_details,
+    qty,
+    cost_per_qty,
+    amount_payable,
+    balance,
+    date_of_service,
+    delivery_details,
+    email_id
+  ], (err, result) => {
+
+    if (err) {
+      console.log(err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Invoice Created Successfully",
+      invoice_no,
+      id: result.insertId
+    });
+  });
+});
+
+// ================= GET INVOICES =================
+app.get("/invoices", (req, res) => {
   db.query(
-    `UPDATE estimates SET
-      group_name=?,
-      chain_name=?,
-      brand_name=?,
-      zone_name=?,
-      service_details=?,
-      total_quantity=?,
-      cost_per_quantity=?,
-      total_amount=?
-     WHERE estimate_id=?`,
-    [group_name, chain_name, brand_name, zone_name, service_details, total_quantity, cost_per_quantity, total_amount, req.params.id],
-    (err)=>{
-      if(err) return res.status(500).json({message:err.message});
-      res.json({message:"Updated"});
+    "SELECT * FROM invoices ORDER BY id DESC",
+    (err, rows) => {
+      if (err) return res.status(500).json(err);
+      res.json(rows);
     }
   );
 });
 
-// DELETE (SOFT)
-app.patch("/estimates/:id/delete",(req,res)=>{
-  db.query(
-    "UPDATE estimates SET is_active=false WHERE estimate_id=?",
-    [req.params.id],
-    (err)=>{
-      if(err) return res.status(500).json({message:err.message});
-      res.json({message:"Deleted"});
-    }
-  );
+// ================= COUNTS API =================
+app.get("/counts/groups", (req, res) => {
+  db.query("SELECT COUNT(*) AS total FROM groups WHERE is_active=1", (err, r) => {
+    res.json(r[0]);
+  });
+});
+
+app.get("/counts/chains", (req, res) => {
+  db.query("SELECT COUNT(*) AS total FROM chains WHERE is_active=1", (err, r) => {
+    res.json(r[0]);
+  });
+});
+
+app.get("/counts/brands", (req, res) => {
+  db.query("SELECT COUNT(*) AS total FROM brands WHERE is_active=1", (err, r) => {
+    res.json(r[0]);
+  });
+});
+
+app.get("/counts/zones", (req, res) => {
+  db.query("SELECT COUNT(*) AS total FROM zones WHERE is_active=1", (err, r) => {
+    res.json(r[0]);
+  });
+});
+
+app.get("/counts/estimates", (req, res) => {
+  db.query("SELECT COUNT(*) AS total FROM estimates WHERE is_active=1", (err, r) => {
+    res.json(r[0]);
+  });
+});
+
+app.get("/counts/invoices", (req, res) => {
+  db.query("SELECT COUNT(*) AS total FROM invoices", (err, r) => {
+    res.json(r[0]);
+  });
 });
 
 // ================= START SERVER =================
-app.listen(5000,()=>{
+app.listen(5000, () => {
   console.log("🚀 Server running on http://localhost:5000");
 });

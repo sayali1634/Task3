@@ -17,6 +17,8 @@
     "express": "^5.2.1",
     "mongoose": "^9.3.3",
     "mysql2": "^3.22.0",
+    "nodemailer": "^8.0.5",
+    "pdfkit": "^0.18.0",
     "sequelize": "^6.37.8"
   }
 }

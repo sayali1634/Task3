@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Estimate</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f4f6f9;
+      display: flex;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      background: #1e3a8a;
+      color: white;
+      height: 100vh;
+      padding: 20px;
+      position: fixed;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+
+    .sidebar a {
+      display: block;
+      color: white;
+      padding: 10px;
+      text-decoration: none;
+      margin-bottom: 8px;
+      border-radius: 6px;
+    }
+
+    .sidebar a:hover {
+      background: #2563eb;
+    }
+
+    /* Main content */
+    .main {
+      margin-left: 240px;
+      padding: 20px;
+      width: 100%;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin-bottom: 15px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+    }
+
+    input, select {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #1e3a8a;
+      color: white;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+
+    table th {
+      background: #f1f5f9;
+    }
+
+    .actions button {
+      margin-right: 5px;
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>IMS Panel</h2>
+    <a href="#">Dashboard</a>
+    <a href="#">Manage Customers</a>
+    <a href="#">Manage Products</a>
+    <a href="#">Manage Estimate</a>
+    <a href="#">Invoices</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+
+    <div class="card">
+      <h1>Manage Estimate</h1>
+
+      <div class="form-grid">
+        <input type="text" id="estimateNo" placeholder="Estimate No" />
+        <input type="text" id="customerName" placeholder="Customer Name" />
+        <input type="date" id="estimateDate" />
+        <input type="text" id="itemName" placeholder="Item Name" />
+        <input type="number" id="quantity" placeholder="Quantity" />
+        <input type="number" id="price" placeholder="Price" />
+      </div>
+
+      <br/>
+      <button onclick="addEstimate()">Add Estimate</button>
+    </div>
+
+    <div class="card">
+      <h2>Estimate List</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Estimate No</th>
+            <th>Customer</th>
+            <th>Date</th>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Price</th>
+            <th>Total</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="estimateTable">
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+<script>
+
+let estimates = [];
+
+function addEstimate() {
+  const estimateNo = document.getElementById('estimateNo').value;
+  const customerName = document.getElementById('customerName').value;
+  const estimateDate = document.getElementById('estimateDate').value;
+  const itemName = document.getElementById('itemName').value;
+  const quantity = document.getElementById('quantity').value;
+  const price = document.getElementById('price').value;
+
+  if(!estimateNo || !customerName) {
+    alert("Fill required fields");
+    return;
+  }
+
+  const total = quantity * price;
+
+  estimates.push({ estimateNo, customerName, estimateDate, itemName, quantity, price, total });
+
+  renderTable();
+}
+
+function renderTable() {
+  const table = document.getElementById('estimateTable');
+  table.innerHTML = "";
+
+  estimates.forEach((e, index) => {
+    table.innerHTML += `
+      <tr>
+        <td>${e.estimateNo}</td>
+        <td>${e.customerName}</td>
+        <td>${e.estimateDate}</td>
+        <td>${e.itemName}</td>
+        <td>${e.quantity}</td>
+        <td>${e.price}</td>
+        <td>${e.total}</td>
+        <td class="actions">
+          <button onclick="editEstimate(${index})">Edit</button>
+          <button onclick="deleteEstimate(${index})">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function deleteEstimate(index) {
+  estimates.splice(index, 1);
+  renderTable();
+}
+
+function editEstimate(index) {
+  const e = estimates[index];
+
+  document.getElementById('estimateNo').value = e.estimateNo;
+  document.getElementById('customerName').value = e.customerName;
+  document.getElementById('estimateDate').value = e.estimateDate;
+  document.getElementById('itemName').value = e.itemName;
+  document.getElementById('quantity').value = e.quantity;
+  document.getElementById('price').value = e.price;
+
+  deleteEstimate(index);
+}
+
+</script>
+
+</body>
+</html>
