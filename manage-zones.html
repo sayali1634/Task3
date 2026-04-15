@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manage Zones</title>
+
+  <style>
+    body{margin:0;font-family:Arial;background:#f5f5f5;}
+    .sidebar{width:200px;background:#1e40af;color:white;position:fixed;height:100%;padding:20px;}
+    .sidebar a{display:block;color:white;text-decoration:none;margin:10px 0;padding:6px;border-radius:5px;}
+    .sidebar a.active{background:#2563eb;}
+    .main{margin-left:220px;padding:20px;}
+
+    input,select{padding:6px;margin:5px;}
+
+    button{padding:6px 10px;border:none;border-radius:5px;cursor:pointer;}
+    .add{background:#2563eb;color:white;}
+    .delete{background:red;color:white;}
+    .edit{background:green;color:white;}
+
+    table{width:100%;border-collapse:collapse;background:white;margin-top:20px;}
+    th,td{border:1px solid #ddd;padding:10px;text-align:center;}
+    th{background:#f1f5f9;}
+  </style>
+</head>
+
+<body>
+
+<div class="sidebar">
+  <h3>Invoice</h3>
+  <a href="index.html">Dashboard</a>
+  <a href="manage-change.html">Chains</a>
+  <a href="manage-brands.html">Brands</a>
+  <a class="active">Zones</a>
+</div>
+
+<div class="main">
+
+  <h2>Manage Zones</h2>
+
+  <!-- FORM -->
+  <input id="zoneName" placeholder="Zone Name">
+
+  <select id="brandSelect">
+    <option value="">Select Brand</option>
+  </select>
+
+  <button class="add" onclick="saveZone()">Add</button>
+  <button class="delete" onclick="clearForm()">Cancel</button>
+
+  <!-- TABLE -->
+  <table>
+    <thead>
+      <tr>
+        <th>Sr</th>
+        <th>Zone</th>
+        <th>Brand</th>
+        <th>Company</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+
+    <tbody id="table"></tbody>
+  </table>
+
+</div>
+
+<script>
+
+const API = "http://localhost:5000";
+
+let zones = [];
+let brands = [];
+let editId = null;
+
+// ================= LOAD DATA =================
+async function loadData(){
+  try{
+
+    const brandRes = await fetch(API+"/brands");
+    brands = await brandRes.json();
+
+    const zoneRes = await fetch(API+"/zones");
+    zones = await zoneRes.json();
+
+    fillDropdown();
+    renderTable(zones);
+
+  } catch(err){
+    console.log(err);
+    alert("Server not running");
+  }
+}
+
+// ================= DROPDOWN =================
+function fillDropdown(){
+  let sel = document.getElementById("brandSelect");
+  sel.innerHTML = `<option value="">Select Brand</option>`;
+
+  brands.forEach(b=>{
+    sel.innerHTML += `<option value="${b.brand_id}">
+      ${b.brand_name}
+    </option>`;
+  });
+}
+
+// ================= TABLE =================
+function renderTable(data){
+  let t = document.getElementById("table");
+  t.innerHTML = "";
+
+  if(data.length === 0){
+    t.innerHTML = "<tr><td colspan='6'>No Data</td></tr>";
+    return;
+  }
+
+  data.forEach((z,i)=>{
+    t.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${z.zone_name}</td>
+        <td>${z.brand_name}</td>
+        <td>${z.company_name}</td>
+        <td>
+          <button class="edit" onclick="editZone(${z.zone_id})">Edit</button>
+        </td>
+        <td>
+          <button class="delete" onclick="deleteZone(${z.zone_id})">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+// ================= SAVE =================
+async function saveZone(){
+
+  let zone_name = document.getElementById("zoneName").value.trim();
+  let brand_id = Number(document.getElementById("brandSelect").value);
+
+  if(!zone_name || !brand_id){
+    alert("Fill all fields");
+    return;
+  }
+
+  let url = editId ? `${API}/zones/${editId}` : `${API}/zones`;
+  let method = editId ? "PUT" : "POST";
+
+  await fetch(url,{
+    method,
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ zone_name, brand_id })
+  });
+
+  clearForm();
+  loadData();
+}
+
+// ================= EDIT =================
+function editZone(id){
+  let z = zones.find(x => x.zone_id == id);
+
+  document.getElementById("zoneName").value = z.zone_name;
+  document.getElementById("brandSelect").value = z.brand_id;
+
+  editId = id;
+
+  document.querySelector(".add").innerText = "Update";
+}
+
+// ================= DELETE =================
+async function deleteZone(id){
+  if(!confirm("Delete this zone?")) return;
+
+  await fetch(API+"/zones/"+id+"/delete",{method:"PATCH"});
+  loadData();
+}
+
+// ================= CLEAR =================
+function clearForm(){
+  editId = null;
+  document.getElementById("zoneName").value = "";
+  document.getElementById("brandSelect").value = "";
+  document.querySelector(".add").innerText = "Add";
+}
+
+// INIT
+loadData();
+
+</script>
+
+</body>
+</html>

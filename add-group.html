@@ -2,72 +2,139 @@
 <html>
 <head>
   <title>Add Group</title>
-  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body{
+      margin:0;
+      font-family:Arial;
+      background:#f5f5f5;
+      display:flex;
+    }
+
+    .sidebar{
+      width:200px;
+      background:#1e40af;
+      color:white;
+      height:100vh;
+      padding:20px;
+      position:fixed;
+    }
+
+    .sidebar a{
+      display:block;
+      color:white;
+      text-decoration:none;
+      margin:10px 0;
+      padding:6px;
+      border-radius:5px;
+    }
+
+    .sidebar a.active{
+      background:#2563eb;
+    }
+
+    .main{
+      margin-left:220px;
+      padding:20px;
+      width:100%;
+    }
+
+    .card{
+      background:white;
+      padding:20px;
+      border-radius:10px;
+      width:300px;
+      box-shadow:0 0 10px rgba(0,0,0,0.1);
+    }
+
+    input{
+      width:100%;
+      padding:8px;
+      margin:10px 0;
+    }
+
+    .btn{
+      padding:8px 12px;
+      border:none;
+      cursor:pointer;
+      border-radius:5px;
+    }
+
+    .add{
+      background:#2563eb;
+      color:white;
+    }
+
+    #msg{
+      margin-top:10px;
+    }
+  </style>
 </head>
 
 <body>
 
-<!-- Sidebar -->
+<!-- SIDEBAR -->
 <div class="sidebar">
   <h3>Invoice</h3>
-  <a href="Dashboard.html">Dashboard</a>
+  <a href="index.html">Dashboard</a>
   <a href="add-group.html" class="active">Manage Groups</a>
   <a href="manage-change.html">Manage Chains</a>
-  <a href="#">Manage Brands</a>
+  <a href="manage-brands.html">Manage Brands</a>
 </div>
 
-<!-- Main Content -->
+<!-- MAIN -->
 <div class="main">
 
-  <!-- Topbar -->
-  <div class="topbar">
-    <div><b>Invoice</b> | Add Group</div>
-    <div>Hi User | Logout</div>
-  </div>
+  <h2>Add Group</h2>
 
-  <!-- Card Form -->
   <div class="card">
-    <h2>Add New Group</h2>
-
     <input id="group" placeholder="Enter Group Name">
-    
-    <button class="btn add" onclick="add()">Add Group</button>
-
+    <button class="btn add" onclick="addGroup()">Add Group</button>
     <p id="msg"></p>
   </div>
 
 </div>
 
 <script>
-const API="http://localhost:5000";
 
-async function add(){
-  const group_name=document.getElementById("group").value.trim();
-  const msg=document.getElementById("msg");
+const API = "http://localhost:5000";
+
+async function addGroup(){
+
+  const group_name = document.getElementById("group").value.trim();
+  const msg = document.getElementById("msg");
 
   if(!group_name){
-    msg.innerText="⚠️ Group name required";
-    msg.style.color="red";
+    msg.innerText = "⚠️ Please enter group name";
+    msg.style.color = "red";
     return;
   }
 
-  const res = await fetch(API+"/groups",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({group_name})
-  });
+  try{
+    const res = await fetch(API + "/groups", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ group_name })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if(!res.ok){
-    msg.innerText = data.message;
+    if(res.ok){
+      msg.innerText = "✅ Group Added Successfully";
+      msg.style.color = "green";
+      document.getElementById("group").value = "";
+    } else {
+      msg.innerText = data.message || "Error occurred";
+      msg.style.color = "red";
+    }
+
+  } catch(err){
+    msg.innerText = "❌ Server not running";
     msg.style.color = "red";
-  } else {
-    msg.innerText = "✅ Group Added Successfully";
-    msg.style.color = "green";
-    document.getElementById("group").value="";
+    console.log(err);
   }
 }
+
 </script>
 
 </body>

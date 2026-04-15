@@ -1,120 +1,184 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Dashboard</title>
+  <title>Invoice Dashboard</title>
 
   <style>
-    body{margin:0;font-family:Arial;background:#f5f5f5;}
+    body{
+      margin:0;
+      font-family:Arial;
+      background:#f5f5f5;
+    }
 
+    /* ================= SIDEBAR ================= */
     .sidebar{
-      width:200px;background:#1e40af;color:white;
-      position:fixed;height:100%;padding:20px;
+      width:220px;
+      background: linear-gradient(180deg, #1e40af, #0f172a);
+      color:white;
+      position:fixed;
+      height:100%;
+      padding:20px;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    }
+
+    .sidebar h2{
+      font-size:18px;
+      text-align:center;
+      margin-bottom:20px;
     }
 
     .sidebar a{
-      color:white;text-decoration:none;display:block;margin:10px 0;
+      display:block;
+      color:white;
+      text-decoration:none;
+      padding:10px;
+      margin:6px 0;
+      border-radius:8px;
+      transition:0.3s;
+      font-size:14px;
+    }
+
+    .sidebar a:hover{
+      background:rgba(255,255,255,0.15);
+      transform: translateX(5px);
     }
 
     .sidebar a.active{
-      background:#2563eb;padding:5px;border-radius:5px;
+      background:#3b82f6;
+      font-weight:bold;
     }
 
-    .main{margin-left:220px;padding:20px;}
+    .menu-title{
+      margin-top:15px;
+      font-size:12px;
+      opacity:0.7;
+      padding-left:5px;
+    }
 
-    .cards{display:flex;gap:20px;margin-bottom:20px;}
+    /* ================= MAIN ================= */
+    .main{
+      margin-left:240px;
+      padding:20px;
+    }
+
+    /* ================= CARDS ================= */
+    .cards{
+      display:flex;
+      gap:15px;
+      margin-bottom:20px;
+    }
 
     .card{
-      flex:1;padding:20px;border-radius:10px;
-      color:white;text-align:center;
+      flex:1;
+      padding:20px;
+      border-radius:10px;
+      color:white;
+      text-align:center;
+      box-shadow:0 4px 8px rgba(0,0,0,0.1);
     }
 
-    .card.red{background:#ef4444;}
-    .card.yellow{background:#facc15;color:black;}
-    .card.green{background:#1ba829;color:black;}
-    .card.blue{background:blue;color:white;}
-    .card.purple{background:purple;color:white;}
+    .red{background:#ef4444;}
+    .yellow{background:#facc15;color:black;}
+    .green{background:#22c55e;}
+    .blue{background:#3b82f6;}
+    .purple{background:#a855f7;}
 
-    .form-inline{
-      display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;
+    /* ================= FORM ================= */
+    .form{
+      margin-bottom:20px;
     }
 
     input,select{
-      padding:5px;border-radius:5px;border:1px solid #ccc;
+      padding:8px;
+      margin-right:8px;
+      border-radius:5px;
+      border:1px solid #ccc;
     }
 
+    button{
+      padding:8px 12px;
+      border:none;
+      border-radius:5px;
+      cursor:pointer;
+      background:#2563eb;
+      color:white;
+    }
+
+    button:hover{
+      background:#1d4ed8;
+    }
+
+    /* ================= TABLE ================= */
     table{
-      width:100%;border-collapse:collapse;margin-top:20px;
+      width:100%;
+      border-collapse:collapse;
+      background:white;
+      border-radius:10px;
+      overflow:hidden;
     }
 
     th,td{
-      padding:10px;border:1px solid #ccc;text-align:left;
+      padding:10px;
+      border-bottom:1px solid #ddd;
+      text-align:left;
     }
 
-    .btn{
-      padding:5px 10px;border:none;border-radius:5px;cursor:pointer;
+    th{
+      background:#f1f5f9;
     }
 
-    .btn.add{background:#2563eb;color:white;}
-    .btn.edit{background:orange;color:white;}
-    .btn.delete{background:red;color:white;}
   </style>
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
+<!-- ================= SIDEBAR ================= -->
 <div class="sidebar">
-  <h3>Invoice</h3>
+  <h2>📊 Invoice System</h2>
 
-  <a href="index.html" class="active">Dashboard</a>
+  <a class="active">🏠 Dashboard</a>
+
+  
   <a href="add-group.html">Manage Groups</a>
-  <a href="manage-change.html">Manage Chain</a>
+  <a href="manage-change.html">Chains</a>
   <a href="manage-brands.html">Manage Brands</a>
   <a href="manage-subzones.html">Manage Subzones</a>
-  <a href="manage-estimates.html">Manage Estimate</a>
-  <a href="manage-invoices.html">Manage Invoice</a>
+  <a href="manage-estimates.html"> Manage Estimates</a>
+  <a href="manage-invoices.html">Manage Invoices</a>
 
+  
 </div>
 
-<!-- Main -->
+<!-- ================= MAIN ================= -->
 <div class="main">
+
   <h2>Dashboard</h2>
 
-  <!-- Cards -->
+  <!-- ================= CARDS ================= -->
   <div class="cards">
-    <div class="card red">Total Groups<br><h2 id="totalGroups">0</h2></div>
-    <div class="card yellow">Total Chains<br><h2 id="totalChains">0</h2></div>
-    <div class="card green">Total Brands<br><h2 id="totalBrands">0</h2></div>
-    <div class="card blue">Total Zones<br><h2 id="totalZones">0</h2></div>
-    <div class="card purple">Total Estimates<br><h2 id="totalEstimates">0</h2></div>
+    <div class="card red">Groups <h2 id="totalGroups">0</h2></div>
+    <div class="card yellow">Chains <h2 id="totalChains">0</h2></div>
+    <div class="card green">Brands <h2 id="totalBrands">0</h2></div>
+    <div class="card blue">Zones <h2 id="totalZones">0</h2></div>
+    <div class="card purple">Estimates <h2 id="totalEstimates">0</h2></div>
   </div>
 
-  <!-- Filters -->
-  <div class="form-inline">
-    <input type="text" id="companyFilter" placeholder="Filter by Company" oninput="applyFilters()">
-    <select id="groupFilter" onchange="applyFilters()">
-      <option value="">All Groups</option>
-    </select>
-  </div>
-
-  <!-- Add Brand -->
-  <div class="form-inline">
+  <!-- ================= ADD BRAND ================= -->
+  <div class="form">
     <select id="chainSelect"></select>
     <input type="text" id="brandName" placeholder="Brand Name">
-    <button class="btn add" onclick="addBrand()">Add Brand</button>
+    <button onclick="addBrand()">Add Brand</button>
   </div>
 
-  <!-- Table -->
+  <!-- ================= TABLE ================= -->
   <table>
     <thead>
       <tr>
-        <th>Sr</th>
+        <th>ID</th>
         <th>Group</th>
         <th>Company</th>
         <th>GST</th>
-        <th>Brands</th>
-        <th>Edit</th>
-        <th>Delete</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody id="table"></tbody>
@@ -123,125 +187,102 @@
 </div>
 
 <script>
+
 const API = "http://localhost:5000";
 
-let groups = [];
 let chains = [];
-let brands = [];
-let estimates = [];
 
-// Load Data
+// ================= LOAD DATA =================
 async function loadData(){
   try{
 
     const [
       groups,
-      chains,
+      chainsList,
       brands,
       zones,
-      estimates,
-      invoices
+      estimates
     ] = await Promise.all([
       fetch(API+"/counts/groups").then(r=>r.json()),
-      fetch(API+"/counts/chains").then(r=>r.json()),
+      fetch(API+"/chains").then(r=>r.json()),
       fetch(API+"/counts/brands").then(r=>r.json()),
       fetch(API+"/counts/zones").then(r=>r.json()),
-      fetch(API+"/counts/estimates").then(r=>r.json()),
-      fetch(API+"/counts/invoices").then(r=>r.json())
+      fetch(API+"/counts/estimates").then(r=>r.json())
     ]);
 
-    // UPDATE CARDS
     document.getElementById("totalGroups").innerText = groups.total;
-    document.getElementById("totalChains").innerText = chains.total;
+    document.getElementById("totalChains").innerText = chainsList.length;
     document.getElementById("totalBrands").innerText = brands.total;
     document.getElementById("totalZones").innerText = zones.total;
     document.getElementById("totalEstimates").innerText = estimates.total;
-    document.getElementById("totalInvoices").innerText = invoices.total;
 
-  }catch(err){
+    chains = chainsList;
+
+    renderTable();
+    fillDropdown();
+
+  } catch(err){
     console.log(err);
-    alert("Server not running");
+    alert("Server not running or backend error");
   }
 }
-// Render Table
-function renderTable(data){
+
+// ================= TABLE =================
+function renderTable(){
   let t = document.getElementById("table");
   t.innerHTML = "";
 
-  if(data.length===0){
-    t.innerHTML="<tr><td colspan='7'>No Data</td></tr>";
-    return;
-  }
-
-  data.forEach((c,i)=>{
-    let groupName = groups.find(g=>g.group_id==c.group_id)?.group_name || "";
-    let brandCount = brands.filter(b=>b.chain_id==c.chain_id).length;
-
+  chains.forEach((c,i)=>{
     t.innerHTML += `
       <tr>
         <td>${i+1}</td>
-        <td>${groupName}</td>
+        <td>${c.group_name}</td>
         <td>${c.company_name}</td>
         <td>${c.gstn_no}</td>
-        <td>${brandCount}</td>
-        <td><button class="btn edit" onclick="editChain(${c.chain_id})">Edit</button></td>
-        <td><button class="btn delete" onclick="deleteChain(${c.chain_id})">Delete</button></td>
+        <td>
+          <button onclick="editChain(${c.chain_id})">Edit</button>
+          <button onclick="deleteChain(${c.chain_id})">Delete</button>
+        </td>
       </tr>
     `;
   });
 }
 
-// Filter
-function applyFilters(){
-  let company = document.getElementById("companyFilter").value.toLowerCase();
-  let groupId = document.getElementById("groupFilter").value;
+// ================= DROPDOWN =================
+function fillDropdown(){
+  let sel = document.getElementById("chainSelect");
+  sel.innerHTML = "";
 
-  let filtered = chains;
-
-  if(company){
-    filtered = filtered.filter(c=>c.company_name.toLowerCase().includes(company));
-  }
-
-  if(groupId){
-    filtered = filtered.filter(c=>c.group_id == groupId);
-  }
-
-  renderTable(filtered);
+  chains.forEach(c=>{
+    sel.innerHTML += `<option value="${c.chain_id}">${c.company_name}</option>`;
+  });
 }
 
-// Add Brand
+// ================= ADD BRAND =================
 async function addBrand(){
-  let chain_id = document.getElementById("chainSelect").value;
-  let brand_name = document.getElementById("brandName").value.trim();
-
-  if(!chain_id || !brand_name){
-    alert("Select company & enter brand");
-    return;
-  }
-
   await fetch(API+"/brands",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({brand_name, chain_id})
+    body:JSON.stringify({
+      brand_name: document.getElementById("brandName").value,
+      chain_id: document.getElementById("chainSelect").value
+    })
   });
 
-  document.getElementById("brandName").value="";
   loadData();
 }
 
-// Edit Chain
+// ================= EDIT =================
 async function editChain(id){
   let c = chains.find(x=>x.chain_id==id);
 
   let name = prompt("Company Name", c.company_name);
   let gst = prompt("GST Number", c.gstn_no);
 
-  if(!name || !gst) return;
-
   await fetch(API+"/chains/"+id,{
     method:"PUT",
     headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({
+    body:JSON.stringify({
       company_name:name,
       gstn_no:gst,
       group_id:c.group_id
@@ -251,15 +292,14 @@ async function editChain(id){
   loadData();
 }
 
-// Delete Chain
+// ================= DELETE =================
 async function deleteChain(id){
-  if(!confirm("Delete?")) return;
-
   await fetch(API+"/chains/"+id+"/delete",{method:"PATCH"});
   loadData();
 }
 
 loadData();
+
 </script>
 
 </body>
